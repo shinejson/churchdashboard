@@ -76,11 +76,15 @@ try {
     
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-    // Count total
-    $countSql = "SELECT COUNT(*) FROM members m LEFT JOIN fellowships f ON m.fellowship_id = f.id $whereClause";
+    // Count total - must include all JOINs used in WHERE clause
+    $countSql = "SELECT COUNT(*) FROM members m 
+        LEFT JOIN fellowships f ON m.fellowship_id = f.id 
+        LEFT JOIN departments d ON m.department_id = d.id
+        LEFT JOIN cells c ON m.cell_id = c.id
+        $whereClause";
     $countStmt = $db->prepare($countSql);
     foreach ($params as $k => $v) {
-        if (strpos($countSql, $k) !== false) $countStmt->bindValue($k, $v);
+        $countStmt->bindValue($k, $v);
     }
     $countStmt->execute();
     $total = (int)$countStmt->fetchColumn();
