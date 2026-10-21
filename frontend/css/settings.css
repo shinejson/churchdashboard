@@ -1,0 +1,122 @@
+/**
+ * settings.css
+ *
+ * Moved verbatim out of frontend/pages/settings.php's inline <style> block
+ * during the layout refactor - same selectors, declarations and order, so the
+ * page renders identically.
+ *
+ * These rules are tuned against Bootstrap 5 (which this page loads from CDN
+ * before style.css) and against the [data-theme="dark"] attribute the shared
+ * pre-paint theme script sets, so they must stay page-local rather than being
+ * folded into style.css.
+ */
+
+/* Settings page specific styles */
+.settings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.settings-card {
+    background: var(--bg-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.settings-card h3 {
+    color: var(--text-color);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.setting-item {
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.setting-label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+.setting-description {
+    font-size: 0.9em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.nav-tabs .nav-link {
+    color: var(--text-muted);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.alert-success {
+    display: none;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .settings-card {
+    background: var(--surface-color);
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+/* Placeholder text in dark mode */
+[data-theme="dark"] .form-control::placeholder,
+[data-theme="dark"] .form-select::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* Focus state for inputs in dark mode */
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
+}
+
+[data-theme="dark"] .table {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .table-bordered {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .table-light {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .settings-container {
+        padding: 10px;
+    }
+    
+    .settings-card {
+        padding: 15px;
+    }
+}

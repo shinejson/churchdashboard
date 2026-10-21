@@ -1,0 +1,62 @@
+/* ==========================================================================
+   Home Cells - tab navigation
+   ==========================================================================
+   Extracted verbatim from the inline <style> block that cells.php used to ship
+   in its <head>. Rules, selectors and order are unchanged so the page renders
+   exactly as before; it now lives in a stylesheet like every other page's CSS.
+
+   The tab bar itself still carries an inline `margin-bottom` /
+   `border-bottom` style in the markup (as it did originally), which takes
+   precedence over the `padding-bottom: 0` below - also unchanged behaviour.
+   ========================================================================== */
+
+.tab-navigation {
+    display: flex;
+    gap: 0.5rem;
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-muted);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.tab-btn:hover {
+    color: var(--text-color);
+    background: rgba(58, 134, 255, 0.05);
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

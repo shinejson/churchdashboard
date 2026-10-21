@@ -1,4 +1,50 @@
 <?php
+/**
+ * Reports & Analytics
+ *
+ * Reporting dashboard: report type picker, date range, filters, overview charts
+ * and a DataTables results table, plus an email-report dialog. Data comes from
+ * frontend/api/report/apis/ via the large inline script below.
+ *
+ * This page is the layout's odd one out and stays that way:
+ *   - the content id lives on <main class="content" id="main-content"> itself;
+ *     there is no .page-content wrapper (contentTag => 'main');
+ *   - its topnav is nested inside <main> (topnavPlacement => 'in-content');
+ *   - it ships no footer include;
+ *   - Chart.js loads in <head> before js/env.js, while jQuery, Bootstrap, moment,
+ *     daterangepicker and DataTables load at the top of <body> ahead of the inline
+ *     script, which in turn precedes ui.js and main.js. That order is reproduced
+ *     exactly via headCdnJs / preFooterScripts / bodyInline / scripts;
+ *   - it uses Bootstrap 5 and Font Awesome 6.4.0 (not the 6.6.0 other pages use).
+ *     There are no inline page styles to extract: the only <style> block in this
+ *     file lives inside a JS template literal in printCombinedServiceReport() and
+ *     builds the print popup's own document.
+ *
+ * The inline script is kept inline on purpose. It interpolates the CSRF token and
+ * the session role from PHP, so moving ~1000 lines of jQuery/DataTables code into
+ * a static .js file would mean changing how it receives them. It is emitted
+ * through the layout's bodyInline slot, so its position in the document is
+ * unchanged.
+ *
+ * Changes made while moving this onto the shared layout:
+ *   - the permission fallback redirected to `dashboard.php`, which does not exist
+ *     in frontend/pages/ (the dashboard is the root index.php), so a denied user
+ *     got a 404. Both redirects now target the real application root;
+ *   - the CSRF meta tag is now emitted (the page called init_csrf() but never
+ *     printed the tag);
+ *   - the hand-rolled theme snippet, which only read localStorage and ignored the
+ *     OS colour-scheme preference, was replaced by the shared pre-paint theme
+ *     script;
+ *   - the duplicated outputApiConfig() require was dropped (the layout emits it).
+ *
+ * The authentication and permissions logic below is the page's own and is kept
+ * exactly as it was: admin/pastor/pcf are allowed outright, and any other role is
+ * checked against the permissions table.
+ */
+
+// The layout supplies the URL helpers the redirects below use.
+require_once __DIR__ . '/../layout/bootstrap.php';
+
 // report.php
 // Church Management System - Reports & Analytics Dashboard
 // Updated for specific schema: church_management
@@ -33,12 +79,12 @@ if (!in_array($user_role, $allowed_roles)) {
         $permission = $stmt->fetch();
         
         if (!$permission || !$permission['allowed']) {
-            header('Location: dashboard.php');
+            header('Location: ' . layout_url_context()['rootUrl']);
             exit();
         }
     } catch(Exception $e) {
         // If we can't check permissions, redirect to dashboard
-        header('Location: dashboard.php');
+        header('Location: ' . layout_url_context()['rootUrl']);
         exit();
     }
 }
@@ -78,343 +124,21 @@ try {
     error_log("Error fetching services/fellowships: " . $e->getMessage());
 }
 ?>
+<?php
+$bootstrapCss       = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css';
+$bootstrapJs        = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js';
+$fontAwesomeCss     = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+$jqueryJs           = 'https://code.jquery.com/jquery-3.6.0.min.js';
+$momentJs           = 'https://cdn.jsdelivr.net/momentjs/latest/moment.min.js';
+$daterangepickerCss = 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css';
+$daterangepickerJs  = 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js';
+$dataTablesCss      = 'https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css';
+$dataTablesJs       = 'https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js';
+$dataTablesBs5Js    = 'https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js';
+$chartJs            = 'https://cdn.jsdelivr.net/npm/chart.js';
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?> - Church Management System</title>
-    
-    <!-- API Configuration - MUST load first -->
-    <?php require_once __DIR__ . '/../includes/config.php'; outputApiConfig(); ?>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Date Range Picker -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    
-    <!-- Environment and Configuration - MUST load before other scripts -->
-    <script src="../js/env.js"></script>
-    <script src="../js/config.js"></script>
-    
-    <!-- DataTables -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css"/>
-    
-    
-    <!-- Main Styles -->
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/report.css">
-    
-    <script>
-        // Restore theme before page renders to avoid flash
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-    </script>
-
-</head>
-<body>
-    <div id="app">
-        <?php include '../sidebar.php'; ?>
-        
-        <main class="content" id="main-content">
-            <?php include '../topnav.php'; ?>
-        <!-- Page Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3 mb-0">
-                <i class="fas fa-chart-bar text-primary me-2"></i>
-                <?php echo htmlspecialchars($page_title); ?>
-                <small class="text-muted fs-6">(Role: <?php echo htmlspecialchars($user_role); ?>)</small>
-            </h1>
-            <div class="d-flex align-items-center">
-                <span class="me-3">
-                    <i class="fas fa-user-circle me-1"></i>
-                    <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?>
-                </span>
-                <button class="btn btn-sm btn-outline-secondary" id="printReports">
-                    <i class="fas fa-print me-1"></i> Print
-                </button>
-            </div>
-        </div>
-        
-        <!-- ============================
-             FILTER SECTION
-             ============================ -->
-        <div class="filter-section">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label for="reportType" class="form-label">Report Type</label>
-                        <select class="form-select" id="reportType">
-                            <option value="overview">Overview Dashboard</option>
-                            <optgroup label="Membership Reports">
-                                <option value="members_summary">Members Summary</option>
-                                <option value="members_by_status">Members by Status</option>
-                                <option value="members_by_age">Members by Age/Category</option>
-                                <option value="new_members">New Members</option>
-                                <option value="members_by_fellowship">Members by Fellowship</option>
-                            </optgroup>
-                            <optgroup label="Financial Reports">
-                                <option value="offerings_summary">Offerings Summary</option>
-                                <option value="tithes_summary">Tithes Summary</option>
-                                <option value="income_by_type">Income by Type</option>
-                                <option value="income_range">Income by Date Range</option>
-                                <option value="by_payment_method">By Payment Method</option>
-                                <option value="partnership_arms">Partnership Arms Giving & Ranking</option>
-                            </optgroup>
-                            <optgroup label="Attendance Reports">
-                                <option value="attendance_summary">Attendance Summary</option>
-                                <option value="attendance_by_service">Attendance by Service</option>
-                                <option value="attendance_by_fellowship">Attendance by Fellowship</option>
-                                <option value="attendance_trends">Attendance Trends</option>
-                                <option value="top_attendees">Top Attendees with Ranking</option>
-                            </optgroup>
-                            <optgroup label="Service Reports">
-                                <option value="service_summary">Service Report (Combined)</option>
-                                <option value="service_details">Service Details</option>
-                            </optgroup>
-                            <optgroup label="Fellowship Reports">
-                                <option value="fellowship_summary">Fellowship Summary</option>
-                                <option value="fellowship_attendance">Fellowship Attendance</option>
-                            </optgroup>
-                            <?php if($user_role === 'admin'): ?>
-                            <optgroup label="System Reports">
-                                <option value="user_activity">User Activity</option>
-                                <option value="system_logs">System Logs</option>
-                            </optgroup>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label for="fellowshipFilter" class="form-label">Fellowship</label>
-                        <select class="form-select" id="fellowshipFilter">
-                            <option value="">All Fellowships</option>
-                            <?php foreach($fellowships as $fellowship): ?>
-                                <option value="<?php echo htmlspecialchars($fellowship['id']); ?>">
-                                    <?php echo htmlspecialchars($fellowship['name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label for="serviceFilter" class="form-label">Service</label>
-                        <select class="form-select" id="serviceFilter">
-                            <option value="">All Services</option>
-                            <?php foreach($services as $service): ?>
-                                <option value="<?php echo htmlspecialchars($service['id']); ?>">
-                                    <?php echo htmlspecialchars($service['name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label for="dateRange" class="form-label">Date Range</label>
-                        <input type="text" class="form-control" id="dateRange" 
-                               value="<?php echo date('Y-m-01') . ' to ' . date('Y-m-d'); ?>">
-                    </div>
-                </div>
-                
-                <div class="col-md-2">
-                    <div class="mb-3">
-                        <label for="timePeriod" class="form-label">Group By</label>
-                        <select class="form-select" id="timePeriod">
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly" selected>Monthly</option>
-                            <option value="quarterly">Quarterly</option>
-                            <option value="yearly">Yearly</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="col-md-2 d-flex align-items-end">
-                    <button class="btn btn-primary w-100" id="generateReport">
-                        <i class="fas fa-sync-alt me-1"></i> Generate
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- ============================
-             SUMMARY CARDS
-             ============================ -->
-        <div class="row mb-4" id="summaryCards">
-            <div class="col-md-3 mb-3">
-                <div class="card report-card bg-primary text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-subtitle mb-2 opacity-75">Total Members</h6>
-                                <h3 class="card-title" id="totalMembers">0</h3>
-                                <small class="card-text">Active: <span id="activeMembers">0</span></small>
-                            </div>
-                            <div class="card-icon">
-                                <i class="fas fa-users"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3 mb-3">
-                <div class="card report-card bg-success text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-subtitle mb-2 opacity-75">Total Offerings</h6>
-                                <h3 class="card-title" id="totalOfferings">GHS 0</h3>
-                                <small class="card-text">Tithes: <span id="totalTithes">GHS 0</span></small>
-                            </div>
-                            <div class="card-icon">
-                                <i class="fas fa-hand-holding-usd"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3 mb-3">
-                <div class="card report-card bg-info text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-subtitle mb-2 opacity-75">Attendance</h6>
-                                <h3 class="card-title" id="totalAttendance">0</h3>
-                                <small class="card-text">Rate: <span id="attendanceRate">0%</span></small>
-                            </div>
-                            <div class="card-icon">
-                                <i class="fas fa-calendar-check"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3 mb-3">
-                <div class="card report-card bg-warning text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-subtitle mb-2 opacity-75">Fellowships</h6>
-                                <h3 class="card-title" id="totalFellowships">0</h3>
-                                <small class="card-text">Active: <span id="activeFellowships">0</span></small>
-                            </div>
-                            <div class="card-icon">
-                                <i class="fas fa-church"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- ============================
-             LOADING SPINNER
-             ============================ -->
-        <div class="loading-spinner" id="loadingSpinner">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-3 fs-5">Loading report data...</p>
-        </div>
-        
-        <!-- ============================
-             CHARTS SECTION
-             ============================ -->
-        <div class="row" id="chartsSection">
-            <div class="col-lg-8">
-                <div class="chart-container">
-                    <h5 class="mb-3" id="chart1Title">Monthly Overview</h5>
-                    <canvas id="overviewChart"></canvas>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="chart-container">
-                    <h5 class="mb-3" id="chart2Title">Membership Distribution</h5>
-                    <canvas id="membershipChart"></canvas>
-                </div>
-            </div>
-        </div>
-        
-        <!-- ============================
-             STATISTICS SECTION
-             ============================ -->
-        <div class="row" id="statsSection">
-            <!-- Stats will be loaded dynamically -->
-        </div>
-        
-        <!-- ============================
-             DATA TABLES
-             ============================ -->
-        <div class="table-container" id="dataTables">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 id="tableTitle">Detailed Report</h5>
-                <div>
-                    <button class="btn btn-sm btn-outline-primary me-2" id="exportCSV">
-                        <i class="fas fa-file-csv me-1"></i> Export CSV
-                    </button>
-                    <button class="btn btn-sm btn-outline-success me-2" id="exportExcel">
-                        <i class="fas fa-file-excel me-1"></i> Export Excel
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger me-2" id="exportPDF">
-                        <i class="fas fa-file-pdf me-1"></i> Print/PDF
-                    </button>
-                    <button class="btn btn-sm btn-outline-info" id="emailReport">
-                        <i class="fas fa-envelope me-1"></i> Email Report
-                    </button>
-                </div>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover" id="reportTable">
-                    <thead id="reportTableHead">
-                        <!-- Headers will be loaded dynamically -->
-                    </thead>
-                    <tbody id="reportTableBody">
-                        <!-- Data will be loaded dynamically -->
-                    </tbody>
-                </table>
-            </div>
-            <div class="mt-3 text-center" id="tablePagination">
-                <!-- Pagination will be loaded dynamically -->
-            </div>
-        </div>
-    </main>
-</div>
-    
-    <!-- ============================
-         JAVASCRIPT IMPORTS
-         ============================ -->
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Date Range Picker -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-    
-    <!-- DataTables -->
-    <script type="text/javascript" src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-    
-    <!-- Custom JavaScript -->
+/** The page's own reporting code, verbatim. It interpolates PHP, hence heredoc. */
+$reportInlineScript = <<<'REPORTJS'
     <script>
         // ============================
         // GLOBAL CONFIGURATION
@@ -1459,8 +1183,10 @@ try {
             }
         }
     </script>
-    
-    <!-- Email Report Modal -->
+REPORTJS;
+
+/** Email-report dialog. Rendered after the inline script, exactly as before. */
+$reportModal = <<<'HTML'
     <div class="modal fade" id="emailReportModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -1502,5 +1228,314 @@ try {
     </div>
     <script src="../js/ui.js"></script>
     <script src="../js/main.js"></script>
-</body>
-</html>
+HTML;
+
+$page = layout_page_init([
+    'id' => 'reports',
+    'title' => $page_title,
+    'titleSuffix' => 'Church Management System',
+    // The role allowlist and permissions-table check above stay as they were, so
+    // the layout only needs to require an authenticated session.
+    'permission' => 'none',
+    // The content id sits on <main>; there is no .page-content wrapper.
+    'contentTag' => 'main',
+    'contentId' => 'main-content',
+    'contentWrapper' => false,
+    // This page nests its topnav inside <main>.
+    'topnavPlacement' => 'in-content',
+    // Bootstrap, then Font Awesome 6.4.0, then the site styles.
+    'css' => [$bootstrapCss, $fontAwesomeCss, $daterangepickerCss, $dataTablesCss, 'css/style.css', 'css/report.css'],
+    // Chart.js has to exist before env.js/config.js run.
+    'headCdnJs' => [$chartJs],
+    // jQuery -> Bootstrap -> moment -> daterangepicker -> DataTables, all ahead of
+    // the inline script. The type attributes are carried over as shipped.
+    'preFooterScripts' => [
+        $jqueryJs,
+        $bootstrapJs,
+        ['src' => $momentJs, 'type' => 'text/javascript'],
+        ['src' => $daterangepickerJs, 'type' => 'text/javascript'],
+        ['src' => $dataTablesJs, 'type' => 'text/javascript'],
+        ['src' => $dataTablesBs5Js, 'type' => 'text/javascript'],
+    ],
+    'bodyInline' => $reportInlineScript,
+    'scripts' => ['js/ui.js', 'js/main.js'],
+    'overlays' => $reportModal,
+    // report.php ships without the shared footer.
+    'showFooter' => false,
+]);
+
+require_once LAYOUT_DIR . '/head.php';
+?>
+
+<?php require_once LAYOUT_DIR . '/body-open.php'; ?>
+
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-chart-bar text-primary me-2"></i>
+                <?php echo htmlspecialchars($page_title); ?>
+                <small class="text-muted fs-6">(Role: <?php echo htmlspecialchars($user_role); ?>)</small>
+            </h1>
+            <div class="d-flex align-items-center">
+                <span class="me-3">
+                    <i class="fas fa-user-circle me-1"></i>
+                    <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?>
+                </span>
+                <button class="btn btn-sm btn-outline-secondary" id="printReports">
+                    <i class="fas fa-print me-1"></i> Print
+                </button>
+            </div>
+        </div>
+        
+        <!-- ============================
+             FILTER SECTION
+             ============================ -->
+        <div class="filter-section">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="reportType" class="form-label">Report Type</label>
+                        <select class="form-select" id="reportType">
+                            <option value="overview">Overview Dashboard</option>
+                            <optgroup label="Membership Reports">
+                                <option value="members_summary">Members Summary</option>
+                                <option value="members_by_status">Members by Status</option>
+                                <option value="members_by_age">Members by Age/Category</option>
+                                <option value="new_members">New Members</option>
+                                <option value="members_by_fellowship">Members by Fellowship</option>
+                            </optgroup>
+                            <optgroup label="Financial Reports">
+                                <option value="offerings_summary">Offerings Summary</option>
+                                <option value="tithes_summary">Tithes Summary</option>
+                                <option value="income_by_type">Income by Type</option>
+                                <option value="income_range">Income by Date Range</option>
+                                <option value="by_payment_method">By Payment Method</option>
+                                <option value="partnership_arms">Partnership Arms Giving & Ranking</option>
+                            </optgroup>
+                            <optgroup label="Attendance Reports">
+                                <option value="attendance_summary">Attendance Summary</option>
+                                <option value="attendance_by_service">Attendance by Service</option>
+                                <option value="attendance_by_fellowship">Attendance by Fellowship</option>
+                                <option value="attendance_trends">Attendance Trends</option>
+                                <option value="top_attendees">Top Attendees with Ranking</option>
+                            </optgroup>
+                            <optgroup label="Service Reports">
+                                <option value="service_summary">Service Report (Combined)</option>
+                                <option value="service_details">Service Details</option>
+                            </optgroup>
+                            <optgroup label="Fellowship Reports">
+                                <option value="fellowship_summary">Fellowship Summary</option>
+                                <option value="fellowship_attendance">Fellowship Attendance</option>
+                            </optgroup>
+                            <?php if($user_role === 'admin'): ?>
+                            <optgroup label="System Reports">
+                                <option value="user_activity">User Activity</option>
+                                <option value="system_logs">System Logs</option>
+                            </optgroup>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="fellowshipFilter" class="form-label">Fellowship</label>
+                        <select class="form-select" id="fellowshipFilter">
+                            <option value="">All Fellowships</option>
+                            <?php foreach($fellowships as $fellowship): ?>
+                                <option value="<?php echo htmlspecialchars($fellowship['id']); ?>">
+                                    <?php echo htmlspecialchars($fellowship['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="serviceFilter" class="form-label">Service</label>
+                        <select class="form-select" id="serviceFilter">
+                            <option value="">All Services</option>
+                            <?php foreach($services as $service): ?>
+                                <option value="<?php echo htmlspecialchars($service['id']); ?>">
+                                    <?php echo htmlspecialchars($service['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="dateRange" class="form-label">Date Range</label>
+                        <input type="text" class="form-control" id="dateRange" 
+                               value="<?php echo date('Y-m-01') . ' to ' . date('Y-m-d'); ?>">
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="mb-3">
+                        <label for="timePeriod" class="form-label">Group By</label>
+                        <select class="form-select" id="timePeriod">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" id="generateReport">
+                        <i class="fas fa-sync-alt me-1"></i> Generate
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ============================
+             SUMMARY CARDS
+             ============================ -->
+        <div class="row mb-4" id="summaryCards">
+            <div class="col-md-3 mb-3">
+                <div class="card report-card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 opacity-75">Total Members</h6>
+                                <h3 class="card-title" id="totalMembers">0</h3>
+                                <small class="card-text">Active: <span id="activeMembers">0</span></small>
+                            </div>
+                            <div class="card-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card report-card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 opacity-75">Total Offerings</h6>
+                                <h3 class="card-title" id="totalOfferings">GHS 0</h3>
+                                <small class="card-text">Tithes: <span id="totalTithes">GHS 0</span></small>
+                            </div>
+                            <div class="card-icon">
+                                <i class="fas fa-hand-holding-usd"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card report-card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 opacity-75">Attendance</h6>
+                                <h3 class="card-title" id="totalAttendance">0</h3>
+                                <small class="card-text">Rate: <span id="attendanceRate">0%</span></small>
+                            </div>
+                            <div class="card-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card report-card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 opacity-75">Fellowships</h6>
+                                <h3 class="card-title" id="totalFellowships">0</h3>
+                                <small class="card-text">Active: <span id="activeFellowships">0</span></small>
+                            </div>
+                            <div class="card-icon">
+                                <i class="fas fa-church"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ============================
+             LOADING SPINNER
+             ============================ -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 fs-5">Loading report data...</p>
+        </div>
+        
+        <!-- ============================
+             CHARTS SECTION
+             ============================ -->
+        <div class="row" id="chartsSection">
+            <div class="col-lg-8">
+                <div class="chart-container">
+                    <h5 class="mb-3" id="chart1Title">Monthly Overview</h5>
+                    <canvas id="overviewChart"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-container">
+                    <h5 class="mb-3" id="chart2Title">Membership Distribution</h5>
+                    <canvas id="membershipChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ============================
+             STATISTICS SECTION
+             ============================ -->
+        <div class="row" id="statsSection">
+            <!-- Stats will be loaded dynamically -->
+        </div>
+        
+        <!-- ============================
+             DATA TABLES
+             ============================ -->
+        <div class="table-container" id="dataTables">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 id="tableTitle">Detailed Report</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary me-2" id="exportCSV">
+                        <i class="fas fa-file-csv me-1"></i> Export CSV
+                    </button>
+                    <button class="btn btn-sm btn-outline-success me-2" id="exportExcel">
+                        <i class="fas fa-file-excel me-1"></i> Export Excel
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger me-2" id="exportPDF">
+                        <i class="fas fa-file-pdf me-1"></i> Print/PDF
+                    </button>
+                    <button class="btn btn-sm btn-outline-info" id="emailReport">
+                        <i class="fas fa-envelope me-1"></i> Email Report
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover" id="reportTable">
+                    <thead id="reportTableHead">
+                        <!-- Headers will be loaded dynamically -->
+                    </thead>
+                    <tbody id="reportTableBody">
+                        <!-- Data will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3 text-center" id="tablePagination">
+                <!-- Pagination will be loaded dynamically -->
+            </div>
+        </div>
+
+<?php require_once LAYOUT_DIR . '/body-close.php'; ?>
