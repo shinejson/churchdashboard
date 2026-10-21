@@ -1,0 +1,471 @@
+ :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --sidebar-width: 250px;
+            /* Light mode defaults */
+            --bg-color: #ffffff;
+            --surface-color: #f8f9fa;
+            --text-color: #212529;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --card-bg: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #ced4da;
+        }
+        
+        /* Dark mode variables */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #333;
+            --card-bg: #1e1e1e;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --light-bg: #121212;
+        }
+        
+        .sidebar {
+            min-height: 100vh;
+            max-height: 100vh;
+            background: var(--primary-color);
+            color: white;
+            width: var(--sidebar-width);
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding-top: 20px;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        /* Scrollbar styling for sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .sidebar-brand {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 10px;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: 2px;
+        }
+        
+        .sidebar-nav a {
+            color: rgba(255,255,255,0.8);
+            padding: 8px 15px;
+            display: block;
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            font-size: 0.9rem;
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: var(--secondary-color);
+        }
+        
+        .sidebar-nav i {
+            width: 25px;
+            text-align: center;
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            background: var(--light-bg);
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+        
+        .report-card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            height: 100%;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .report-card {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .report-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+        
+        .filter-section {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .filter-section {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        
+        .chart-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            height: 400px;
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .chart-container {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        
+        .table-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .table-container {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        
+        /* Form controls dark mode */
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .form-select {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border-color: var(--input-border);
+        }
+        
+        [data-theme="dark"] .form-control:focus,
+        [data-theme="dark"] .form-select:focus {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border-color: var(--secondary-color);
+        }
+        
+        /* Table dark mode */
+        [data-theme="dark"] .table {
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .table-bordered {
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .table thead th {
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .table tbody td {
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+        
+        [data-theme="dark"] .table-hover tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .stat-card {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        
+        /* Dark mode for stat cards */
+        [data-theme="dark"] .stat-card {
+            background-color: var(--surface-color);
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .stat-card.bg-light {
+            background-color: var(--surface-color) !important;
+        }
+        
+        .stat-card .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .stat-card .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Ensure text colors work in both modes */
+        [data-theme="dark"] .stat-card .stat-value {
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .stat-card .stat-label {
+            color: var(--text-muted);
+        }
+        
+        /* Card header dark mode */
+        [data-theme="dark"] .card-header {
+            background-color: var(--surface-color);
+            border-bottom-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .card-body {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        /* Fix card borders in dark mode */
+        [data-theme="dark"] .card {
+            border-color: var(--border-color);
+        }
+        
+        /* Ensure report-card text colors in dark mode */
+        [data-theme="dark"] .report-card .card-header h6 {
+            color: var(--text-color);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .sidebar .nav-text {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+        }
+        
+        .badge-attendance-present { background-color: #28a745; }
+        .badge-attendance-absent { background-color: #dc3545; }
+        .badge-attendance-excused { background-color: #ffc107; color: #212529; }
+        
+        .status-active { color: #28a745; }
+        .status-inactive { color: #dc3545; }
+        .status-visitor { color: #ffc107; }
+        
+        /* ============================
+           DATE RANGE PICKER DARK MODE
+           ============================ */
+        
+        /* Main daterangepicker container */
+        [data-theme="dark"] .daterangepicker {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        /* Dropdown arrow */
+        [data-theme="dark"] .daterangepicker:before {
+            border-bottom-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .daterangepicker:after {
+            border-bottom-color: var(--card-bg);
+        }
+        
+        /* Calendar table */
+        [data-theme="dark"] .daterangepicker .calendar-table {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        /* Calendar header (month/year) */
+        [data-theme="dark"] .daterangepicker th {
+            color: var(--text-color);
+        }
+        
+        /* Calendar days */
+        [data-theme="dark"] .daterangepicker td {
+            color: var(--text-color);
+        }
+        
+        /* Available days (clickable) */
+        [data-theme="dark"] .daterangepicker td.available:hover {
+            background-color: var(--surface-color);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        /* Disabled/off days */
+        [data-theme="dark"] .daterangepicker td.off,
+        [data-theme="dark"] .daterangepicker td.off.in-range,
+        [data-theme="dark"] .daterangepicker td.off.start-date,
+        [data-theme="dark"] .daterangepicker td.off.end-date {
+            background-color: transparent;
+            border-color: transparent;
+            color: var(--text-muted);
+        }
+        
+        /* Selected date range */
+        [data-theme="dark"] .daterangepicker td.in-range {
+            background-color: rgba(52, 152, 219, 0.2);
+            color: var(--text-color);
+        }
+        
+        /* Start and end dates */
+        [data-theme="dark"] .daterangepicker td.active,
+        [data-theme="dark"] .daterangepicker td.active:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: #ffffff;
+        }
+        
+        /* Today's date */
+        [data-theme="dark"] .daterangepicker td.today {
+            background-color: var(--surface-color);
+            color: var(--text-color);
+        }
+        
+        /* Ranges sidebar */
+        [data-theme="dark"] .daterangepicker .ranges {
+            background-color: var(--surface-color);
+            border-right-color: var(--border-color);
+        }
+        
+        /* Range list items */
+        [data-theme="dark"] .daterangepicker .ranges li {
+            background-color: transparent;
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        /* Range list hover */
+        [data-theme="dark"] .daterangepicker .ranges li:hover {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+        
+        /* Active range */
+        [data-theme="dark"] .daterangepicker .ranges li.active {
+            background-color: var(--secondary-color);
+            color: #ffffff;
+        }
+        
+        /* Input fields in daterangepicker */
+        [data-theme="dark"] .daterangepicker .input-mini {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-color);
+        }
+        
+        /* Buttons */
+        [data-theme="dark"] .daterangepicker .drp-buttons {
+            border-top-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .daterangepicker .btn-default {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .daterangepicker .btn-default:hover {
+            background-color: var(--surface-color);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .daterangepicker .btn-primary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: #ffffff;
+        }
+        
+        /* Calendar navigation arrows */
+        [data-theme="dark"] .daterangepicker .prev,
+        [data-theme="dark"] .daterangepicker .next {
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .daterangepicker .prev:hover,
+        [data-theme="dark"] .daterangepicker .next:hover {
+            background-color: var(--surface-color);
+        }
+        
+        /* Week numbers */
+        [data-theme="dark"] .daterangepicker .calendar-table .week {
+            color: var(--text-muted);
+        }
+        
+        /* Dropdown select (month/year selectors) */
+        [data-theme="dark"] .daterangepicker select.monthselect,
+        [data-theme="dark"] .daterangepicker select.yearselect {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-color);
+        }
+        
+        /* Custom range inputs */
+        [data-theme="dark"] .daterangepicker .drp-calendar {
+            background-color: var(--card-bg);
+        }
+        
+        /* Calendar table borders */
+        [data-theme="dark"] .daterangepicker table {
+            border-color: var(--border-color);
+        }
+        
+        /* Separator between calendars */
+        [data-theme="dark"] .daterangepicker .drp-calendar.left {
+            border-right-color: var(--border-color);
+        }
+ 

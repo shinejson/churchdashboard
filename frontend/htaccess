@@ -1,0 +1,5 @@
+RewriteEngine On
+
+# Allow PUT and DELETE methods
+RewriteCond %{REQUEST_METHOD} ^(PUT|DELETE)$
+RewriteRule .* - [L]

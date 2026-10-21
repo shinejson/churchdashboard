@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment Confirmation</title>
+</head>
+<body>
+  <h2>Checking payment status...</h2>
+  <pre id="result">Waiting for confirmation...</pre>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentRef = urlParams.get("payment_ref");
+
+    if (!paymentRef) {
+      document.getElementById("result").innerText = "No payment reference found in URL.";
+    } else {
+      fetch("https://yourdomain.com/backend/espees-proxy.php?action=confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payment_ref: paymentRef })
+      })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("result").innerText = JSON.stringify(data, null, 2);
+        })
+        .catch(err => {
+          document.getElementById("result").innerText = "Error confirming payment: " + err;
+        });
+    }
+  </script>
+</body>
+</html>

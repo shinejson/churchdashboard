@@ -1,0 +1,139 @@
+/* Simple Icon Fallback - No External Dependencies */
+/* Using Unicode symbols and CSS to replace Font Awesome icons */
+
+.fas::before,
+.fab::before,
+.far::before {
+    font-family: Arial, sans-serif;
+    display: inline-block;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin-right: 0.5em;
+}
+
+/* Common icon mappings */
+.fa-home::before { content: "🏠"; }
+.fa-users::before { content: "👥"; }
+.fa-user::before { content: "👤"; }
+.fa-user-tie::before { content: "🧑"; }
+.fa-users-slash::before { content: "🚫"; }
+.fa-calendar::before { content: "📅"; }
+.fa-clock::before { content: "🕐"; }
+.fa-location::before { content: "📍"; }
+.fa-location-dot::before { content: "📍"; }
+.fa-map-marker::before { content: "📍"; }
+.fa-phone::before { content: "☎"; }
+.fa-envelope::before { content: "✉"; }
+.fa-mail::before { content: "✉"; }
+.fa-edit::before { content: "✎"; }
+.fa-pencil::before { content: "✏"; }
+.fa-trash::before { content: "🗑"; }
+.fa-trash-alt::before { content: "🗑"; }
+.fa-delete::before { content: "🗑"; }
+.fa-check::before { content: "✓"; }
+.fa-times::before { content: "✕"; }
+.fa-close::before { content: "✕"; }
+.fa-search::before { content: "🔍"; }
+.fa-magnifying-glass::before { content: "🔍"; }
+.fa-plus::before { content: "+"; }
+.fa-minus::before { content: "−"; }
+.fa-sort::before { content: "⇅"; }
+.fa-sort-up::before { content: "▲"; }
+.fa-sort-down::before { content: "▼"; }
+.fa-arrow-up::before { content: "↑"; }
+.fa-arrow-down::before { content: "↓"; }
+.fa-arrow-left::before { content: "←"; }
+.fa-arrow-right::before { content: "→"; }
+.fa-heart::before { content: "♥"; }
+.fa-star::before { content: "★"; }
+.fa-star-half::before { content: "⭐"; }
+.fa-bell::before { content: "🔔"; }
+.fa-cog::before { content: "⚙"; }
+.fa-gear::before { content: "⚙"; }
+.fa-settings::before { content: "⚙"; }
+.fa-sliders::before { content: "⚙"; }
+.fa-sliders-h::before { content: "⚙"; }
+.fa-filter::before { content: "⊕"; }
+.fa-download::before { content: "⬇"; }
+.fa-upload::before { content: "⬆"; }
+.fa-file::before { content: "📄"; }
+.fa-folder::before { content: "📁"; }
+.fa-chart-bar::before { content: "📊"; }
+.fa-chart-line::before { content: "📈"; }
+.fa-bar-chart::before { content: "📊"; }
+.fa-line-chart::before { content: "📈"; }
+.fa-pie-chart::before { content: "🥧"; }
+.fa-list::before { content: "≡"; }
+.fa-list-ul::before { content: "•"; }
+.fa-list-ol::before { content: "1."; }
+.fa-th::before { content: "⊞"; }
+.fa-grid::before { content: "⊞"; }
+.fa-square::before { content: "□"; }
+.fa-circle::before { content: "○"; }
+.fa-eye::before { content: "👁"; }
+.fa-eye-slash::before { content: "🚫"; }
+.fa-lock::before { content: "🔒"; }
+.fa-unlock::before { content: "🔓"; }
+.fa-key::before { content: "🔑"; }
+.fa-info::before { content: "ⓘ"; }
+.fa-question::before { content: "?"; }
+.fa-exclamation::before { content: "!"; }
+.fa-warning::before { content: "⚠"; }
+.fa-exclamation-triangle::before { content: "⚠"; }
+.fa-check-circle::before { content: "✓"; }
+.fa-times-circle::before { content: "✕"; }
+.fa-circle-check::before { content: "✓"; }
+.fa-circle-xmark::before { content: "✕"; }
+.fa-book::before { content: "📖"; }
+.fa-bookmark::before { content: "🔖"; }
+.fa-graduation-cap::before { content: "🎓"; }
+.fa-mortar-board::before { content: "🎓"; }
+.fa-cross::before { content: "✦"; }
+.fa-church::before { content: "⛪"; }
+.fa-prayer-beads::before { content: "📿"; }
+.fa-hands-praying::before { content: "🙏"; }
+.fa-moon::before { content: "🌙"; }
+.fa-sun::before { content: "☀"; }
+.fa-lightbulb::before { content: "💡"; }
+.fa-print::before { content: "🖨"; }
+.fa-share::before { content: "↗"; }
+.fa-share-alt::before { content: "↗"; }
+.fa-link::before { content: "🔗"; }
+.fa-chain::before { content: "⛓"; }
+.fa-tag::before { content: "🏷"; }
+.fa-tags::before { content: "🏷"; }
+.fa-refresh::before { content: "🔄"; }
+.fa-reload::before { content: "🔄"; }
+.fa-sync::before { content: "🔄"; }
+.fa-spinner::before { content: "⟳"; }
+.fa-hourglass::before { content: "⌛"; }
+.fa-hourglass-end::before { content: "⌛"; }
+.fa-code::before { content: "< >"; }
+.fa-copy::before { content: "📋"; }
+.fa-clipboard::before { content: "📋"; }
+.fa-paste::before { content: "📋"; }
+.fa-save::before { content: "💾"; }
+.fa-floppy-disk::before { content: "💾"; }
+.fa-undo::before { content: "↶"; }
+.fa-redo::before { content: "↷"; }
+.fa-minus-circle::before { content: "⊖"; }
+.fa-plus-circle::before { content: "⊕"; }
+.fa-menu::before { content: "☰"; }
+.fa-bars::before { content: "☰"; }
+.fa-hamburger::before { content: "☰"; }
+.fa-align-justify::before { content: "☰"; }
+
+/* Sizing */
+.fas { font-size: inherit; }
+.fab { font-size: inherit; }
+.far { font-size: inherit; }
+
+/* Ensure proper alignment */
+i.fas, i.fab, i.far {
+    display: inline-block;
+    font-style: normal;
+    line-height: 1;
+}

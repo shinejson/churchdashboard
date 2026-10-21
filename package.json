@@ -1,0 +1,8 @@
+{
+  "name": "church-management",
+  "version": "1.0.0",
+  "description": "Church management app - helper scripts",
+  "scripts": {
+    "generate-env": "node ./scripts/generate-env.js"
+  }
+}

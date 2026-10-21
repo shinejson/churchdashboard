@@ -1,0 +1,8 @@
+{
+    "cSpell.words": [
+        "httponly",
+        "nosniff"
+    ],
+    "kiroAgent.configureMCP": "Disabled",
+    "html.autoClosingTags": false
+}

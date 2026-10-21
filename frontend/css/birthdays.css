@@ -1,0 +1,210 @@
+/* frontend/css/birthdays.css */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.filters-container {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    align-items: center;
+    background: var(--surface-color, #fff);
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    background: transparent;
+    color: var(--text-color, #1e293b);
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    background: var(--bg-color, #f8fafc);
+}
+
+.filter-btn.active {
+    background: var(--primary-color, #2563eb);
+    color: white;
+    border-color: var(--primary-color, #2563eb);
+}
+
+.birthdays-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.birthday-card {
+    background: var(--surface-color, #fff);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.birthday-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+}
+
+.birthday-card.today {
+    border: 2px solid var(--primary-color, #2563eb);
+}
+
+.birthday-card.today .card-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--primary-color, #2563eb);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 16px;
+    border: 3px solid var(--border-color, #f1f5f9);
+}
+
+.member-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-color, #1e293b);
+    margin: 0 0 4px 0;
+}
+
+.member-details {
+    color: var(--text-muted, #64748b);
+    font-size: 0.875rem;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.member-details i {
+    width: 16px;
+    text-align: center;
+    margin-right: 4px;
+}
+
+.birthday-info {
+    margin: 16px 0;
+    padding: 12px;
+    background: var(--bg-color, #f8fafc);
+    border-radius: 8px;
+    width: 100%;
+}
+
+.birthday-date {
+    font-weight: 600;
+    color: var(--text-color, #1e293b);
+    display: block;
+    font-size: 1.1rem;
+}
+
+.age-turning {
+    color: var(--text-muted, #64748b);
+    font-size: 0.875rem;
+    margin-top: 4px;
+}
+
+.action-buttons {
+    margin-top: auto;
+    width: 100%;
+    display: flex;
+    gap: 8px;
+}
+
+.btn-wish {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    background: var(--success-color, #10b981);
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+
+.btn-wish:hover {
+    background: #059669;
+}
+
+.btn-wish:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 64px 24px;
+    background: var(--surface-color, #fff);
+    border-radius: 12px;
+    color: var(--text-muted, #64748b);
+}
+
+.empty-state i {
+    font-size: 48px;
+    color: var(--border-color, #cbd5e1);
+    margin-bottom: 16px;
+}
+
+.modal-content.wish-modal {
+    max-width: 500px;
+}
+
+textarea#wish-message {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color, #cbd5e1);
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background-color: var(--surface-color, #ffffff);
+    color: var(--text-color, #1e293b);
+}
+
+textarea#wish-message:focus {
+    outline: none;
+    border-color: var(--primary-color, #2563eb);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
