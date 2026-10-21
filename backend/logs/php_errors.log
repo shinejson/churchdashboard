@@ -2138,3 +2138,17 @@
 [21-Oct-2026 11:24:54 UTC] INDEX.PHP: Session User ID: 7
 [21-Oct-2026 11:24:54 UTC] INDEX.PHP: HTTP_HOST: localhost
 [21-Oct-2026 11:24:54 UTC] INDEX.PHP: User is logged in, proceeding to app
+[21-Oct-2026 13:01:09 UTC] Login attempt: username=Peter
+[21-Oct-2026 13:01:09 UTC] Query executed, rowCount=1
+[21-Oct-2026 13:01:09 UTC] User found: Peter
+[21-Oct-2026 13:01:09 UTC] Password verified for user: Peter
+[21-Oct-2026 13:01:09 UTC] Login successful - session debug: {"session_id":"0ldib6cctiqfq6ag77sg16kqmb","session_name":"CMS_SESSION","session_user_id":7,"session_keys":["last_regeneration","last_activity","csrf_token","csrf_token_time","failed_login","user_id","username","role","fellowship_id"],"http_host":"localhost"}
+[21-Oct-2026 13:01:10 UTC] INDEX.PHP: Session ID: 0ldib6cctiqfq6ag77sg16kqmb
+[21-Oct-2026 13:01:10 UTC] INDEX.PHP: Session User ID: 7
+[21-Oct-2026 13:01:10 UTC] INDEX.PHP: HTTP_HOST: localhost
+[21-Oct-2026 13:01:10 UTC] INDEX.PHP: User is logged in, proceeding to app
+[21-Oct-2026 16:13:01 UTC] Login attempt: username=Peter
+[21-Oct-2026 16:13:02 UTC] Query executed, rowCount=1
+[21-Oct-2026 16:13:02 UTC] User found: Peter
+[21-Oct-2026 16:13:02 UTC] Password verified for user: Peter
+[21-Oct-2026 16:13:03 UTC] Login successful - session debug: {"session_id":"jo9tjf5fqbage7j7r837cjhvsi","session_name":"CMS_SESSION","session_user_id":7,"session_keys":["last_regeneration","last_activity","failed_login","user_id","username","role","fellowship_id","csrf_token","csrf_token_time"],"http_host":"localhost"}
