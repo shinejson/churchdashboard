@@ -1,132 +1,22 @@
 <?php
-require_once '../../backend/config/security.php';
-secure_session_start();
+/**
+ * Fellowships
+ *
+ * Fellowship records (leaders, meeting schedules, membership) managed by
+ * js/fellowships.js. Rendered through the shared layout; every DOM hook the
+ * script binds to is preserved.
+ *
+ * Note: this page ships Font Awesome class names (fa-plus, fa-users, ...) but
+ * never loaded the Font Awesome stylesheet, so those <i> elements render empty.
+ * The markup is kept exactly as-is here rather than silently changing how the
+ * page looks - see REFACTORING.md for the follow-up.
+ */
 
-// Check authentication
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
-    exit();
-}
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="<?php echo get_csrf_token(); ?>">
-    <title>Fellowships • Church Management System</title>
-    
-    <!-- API Configuration - MUST load first -->
-    <?php require_once __DIR__ . '/../includes/config.php'; outputApiConfig(); ?>
-    
-    <link rel="stylesheet" href="../css/style.css">
-     <link rel="stylesheet" href="../css/fellowships.css">
-    <link rel="stylesheet" href="../css/icons.css">
-    <!-- Add this to your fellowships.php file in the head section -->
+require_once __DIR__ . '/../layout/bootstrap.php';
 
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-    
-    <!-- Environment and Configuration - MUST load before other scripts -->
-    <script src="../js/env.js"></script>
-    <script src="../js/config.js"></script>
-</head>
-<body>
-    <script>
-        const saved = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = saved === 'dark' || (!saved && prefersDark);
-        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    </script>
-    <?php include '../topnav.php'; ?>
-    
-    <div id="app">
-        <?php include '../sidebar.php'; ?>
-        
-        <main class="content">
-            <div id="fellowships-content" class="page-content active">
-                <div class="page-header">
-                    <h2>Fellowships Management</h2>
-                    <button id="create-fellowship-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i>
-                        Create New Fellowship
-                    </button>
-                </div>
-
-                <!-- Stats Overview -->
-                <div class="stats-overview">
-                    <div class="stat-card">
-                        <div class="stat-icon total">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-value" id="total-fellowships">0</div>
-                        <div class="stat-label">Total Fellowships</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon active">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="stat-value" id="active-fellowships">0</div>
-                        <div class="stat-label">Active Fellowships</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon members">
-                            <i class="fas fa-user-friends"></i>
-                        </div>
-                        <div class="stat-value" id="total-members">0</div>
-                        <div class="stat-label">Total Members</div>
-                    </div>
-                </div>
-
-                <div class="section-title">
-                    <i class="fas fa-th-large"></i>
-                    Fellowships Overview
-                </div>
-
-                <div class="search-export-bar">
-                    <div class="search-box">
-                        <input type="text" id="fellowship-search" placeholder="Search fellowships by name, leader or location...">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <button id="export-fellowships" class="btn btn-outline">
-                        <i class="fas fa-download"></i>
-                        Export List
-                    </button>
-                </div>
-
-                <!-- Grid View -->
-                <div class="fellowships-grid" id="fellowships-grid">
-                    <!-- Cards populated by JS -->
-                </div>
-
-                <!-- Table View -->
-                <div class="section-title">
-                    <i class="fas fa-table"></i>
-                    Detailed Records
-                </div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Fellowship</th>
-                                <th>Leader</th>
-                                <th>Members</th>
-                                <th>Schedule</th>
-                                <th>Location</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="fellowships-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <?php include '../footer.php'; ?>
-
-    <!-- Modal -->
-  <div id="fellowship-modal" class="modal">
+$fellowshipModal = layout_modal([
+    'id' => 'fellowship-modal',
+    'modalContent' => '
     <div class="modal-content">
         <!-- Modal Header -->
         <div class="modal-header">
@@ -144,31 +34,35 @@ if (!isset($_SESSION['user_id'])) {
 
                 <!-- Basic Information Section -->
                 <div class="form-row">
-                    <div class="form-group">
-                        <label for="fellowship-name">
-                            Fellowship Name <span class="required">*</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="fellowship-name" 
-                            required 
-                            placeholder="e.g. Youth Fellowship"
-                            autocomplete="off"
-                        >
-                        <span class="form-hint">Choose a clear, descriptive name</span>
-                    </div>
+                    ' . layout_form_group([
+                        'id' => 'fellowship-name',
+                        'labelHtml' => 'Fellowship Name <span class="required">*</span>',
+                        'control' => layout_input([
+                            'type' => 'text',
+                            'id' => 'fellowship-name',
+                            'class' => null,
+                            'required' => true,
+                            'placeholder' => 'e.g. Youth Fellowship',
+                            'autocomplete' => 'off',
+                        ]),
+                        'hint' => 'Choose a clear, descriptive name',
+                    ]) . '
 
-                    <div class="form-group">
-                        <label for="fellowship-status">
-                            Status <span class="required">*</span>
-                        </label>
-                        <select id="fellowship-status" required>
-                            <option value="">Select Status</option>
-                            <option value="active" selected>Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="pending">Pending</option>
-                        </select>
-                    </div>
+                    ' . layout_form_group([
+                        'id' => 'fellowship-status',
+                        'labelHtml' => 'Status <span class="required">*</span>',
+                        'control' => layout_select([
+                            'id' => 'fellowship-status',
+                            'class' => null,
+                            'required' => true,
+                            'options' => [
+                                ['value' => '', 'label' => 'Select Status'],
+                                ['value' => 'active', 'label' => 'Active', 'selected' => true],
+                                ['value' => 'inactive', 'label' => 'Inactive'],
+                                ['value' => 'pending', 'label' => 'Pending'],
+                            ],
+                        ]),
+                    ]) . '
                 </div>
 
                 <!-- Leadership Section -->
@@ -180,86 +74,89 @@ if (!isset($_SESSION['user_id'])) {
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group">
-                        <label for="fellowship-leader">
-                            Leader <span class="required">*</span>
-                        </label>
-                        <select id="fellowship-leader" required>
-                            <option value="">Select Leader</option>
-                            <!-- Options populated by JS -->
-                        </select>
-                        <span class="form-hint">Primary fellowship leader</span>
-                    </div>
+                    ' . layout_form_group([
+                        'id' => 'fellowship-leader',
+                        'labelHtml' => 'Leader <span class="required">*</span>',
+                        'control' => layout_select([
+                            'id' => 'fellowship-leader',
+                            'class' => null,
+                            'required' => true,
+                            // Remaining options are populated by fellowships.js.
+                            'options' => [['value' => '', 'label' => 'Select Leader']],
+                        ]),
+                        'hint' => 'Primary fellowship leader',
+                    ]) . '
 
-                    <div class="form-group">
-                        <label for="fellowship-assistant">
-                            Assistant Leader
-                        </label>
-                        <select id="fellowship-assistant">
-                            <option value="">Select Assistant (Optional)</option>
-                            <!-- Options populated by JS -->
-                        </select>
-                        <span class="form-hint">Secondary leader (optional)</span>
-                    </div>
+                    ' . layout_form_group([
+                        'id' => 'fellowship-assistant',
+                        'label' => 'Assistant Leader',
+                        'control' => layout_select([
+                            'id' => 'fellowship-assistant',
+                            'class' => null,
+                            'options' => [['value' => '', 'label' => 'Select Assistant (Optional)']],
+                        ]),
+                        'hint' => 'Secondary leader (optional)',
+                    ]) . '
                 </div>
 
                 <!-- Schedule Section -->
-<div class="form-section">
-    <div class="form-section-title">
-        <i class="fas fa-calendar-alt"></i>
-        Meeting Schedules
-    </div>
-</div>
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        Meeting Schedules
+                    </div>
+                </div>
 
-<div class="form-row full">
-    <div class="form-group">
-        <label>Meeting Schedules <span class="required">*</span></label>
-        <div class="meeting-schedules" id="meeting-schedules-container">
-            <!-- Meeting schedules will be populated by JavaScript -->
-        </div>
-        <button type="button" class="add-meeting-btn" onclick="fellowships.addMeetingSchedule()">
-            <i class="fas fa-plus"></i>
-            Add Another Meeting Schedule
-        </button>
-        <span class="form-hint">Add all meeting days and times. The first one will be considered primary.</span>
-    </div>
-</div>
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label>Meeting Schedules <span class="required">*</span></label>
+                        <div class="meeting-schedules" id="meeting-schedules-container">
+                            <!-- Meeting schedules are populated by fellowships.js -->
+                        </div>
+                        <button type="button" class="add-meeting-btn" onclick="fellowships.addMeetingSchedule()">
+                            <i class="fas fa-plus"></i>
+                            Add Another Meeting Schedule
+                        </button>
+                        <span class="form-hint">Add all meeting days and times. The first one will be considered primary.</span>
+                    </div>
+                </div>
 
                 <!-- Location Section -->
                 <div class="form-row full">
-                    <div class="form-group">
-                        <label for="meeting-location">
-                            Location <span class="required">*</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="meeting-location" 
-                            required 
-                            placeholder="e.g. Main Hall, Room 201"
-                            autocomplete="off"
-                        >
-                        <span class="form-hint">Where the fellowship meets</span>
-                    </div>
+                    ' . layout_form_group([
+                        'id' => 'meeting-location',
+                        'labelHtml' => 'Location <span class="required">*</span>',
+                        'control' => layout_input([
+                            'type' => 'text',
+                            'id' => 'meeting-location',
+                            'class' => null,
+                            'required' => true,
+                            'placeholder' => 'e.g. Main Hall, Room 201',
+                            'autocomplete' => 'off',
+                        ]),
+                        'hint' => 'Where the fellowship meets',
+                    ]) . '
                 </div>
 
                 <!-- Description Section -->
                 <div class="form-row full">
-                    <div class="form-group">
-                        <label for="fellowship-description">
-                            Description
-                        </label>
-                        <textarea 
-                            id="fellowship-description" 
-                            rows="4" 
-                            placeholder="Enter fellowship purpose, vision, and activities..."
-                        ></textarea>
-                        <span class="form-hint">Describe the fellowship's purpose and activities</span>
-                    </div>
+                    ' . layout_form_group([
+                        'id' => 'fellowship-description',
+                        'label' => 'Description',
+                        'control' => layout_textarea([
+                            'id' => 'fellowship-description',
+                            'rows' => 4,
+                            'placeholder' => 'Enter fellowship purpose, vision, and activities...',
+                        ]),
+                        'hint' => "Describe the fellowship's purpose and activities",
+                    ]) . '
                 </div>
             </form>
         </div>
 
-        <!-- Modal Footer -->
+        <!-- Modal Footer: a SIBLING of .modal-body. The submit button targets the
+             form through its form="" attribute, so the layout_modal() footer slot
+             (which renders inside the body flow) is not used here. -->
         <div class="form-actions">
             <button type="button" id="cancel-fellowship" class="btn btn-outline">
                 <i class="fas fa-times"></i>
@@ -270,12 +167,88 @@ if (!isset($_SESSION['user_id'])) {
                 Save Fellowship
             </button>
         </div>
-    </div>
-</div>
+    </div>',
+]);
 
+$page = layout_page_init([
+    'id' => 'fellowships',
+    'title' => 'Fellowships',
+    'permission' => 'fellowships',
+    'contentId' => 'fellowships-content',
+    'css' => ['css/style.css', 'css/fellowships.css', 'css/icons.css'],
+    'scripts' => ['js/ui.js', 'js/main.js', 'js/fellowships.js'],
+    'overlays' => $fellowshipModal,
+]);
 
-    <script src="../js/ui.js"></script>
-    <script src="../js/main.js?v=<?php echo time(); ?>"></script>
-    <script src="../js/fellowships.js?v=<?php echo time(); ?>"></script>
-</body>
-</html>
+require_once LAYOUT_DIR . '/head.php';
+?>
+
+<?php require_once LAYOUT_DIR . '/body-open.php'; ?>
+
+                <?= layout_page_header([
+                    'title' => 'Fellowships Management',
+                    'actions' => [layout_button([
+                        'id' => 'create-fellowship-btn',
+                        'label' => 'Create New Fellowship',
+                        'icon' => 'fa-plus',
+                        'classes' => 'btn btn-primary',
+                    ])],
+                ]) ?>
+
+                <!-- Stats Overview -->
+                <?= layout_stats_overview([
+                    layout_stat_card([
+                        'icon' => 'fa-users',
+                        'iconModifier' => 'total',
+                        'valueId' => 'total-fellowships',
+                        'label' => 'Total Fellowships',
+                    ]),
+                    layout_stat_card([
+                        'icon' => 'fa-check-circle',
+                        'iconModifier' => 'active',
+                        'valueId' => 'active-fellowships',
+                        'label' => 'Active Fellowships',
+                    ]),
+                    layout_stat_card([
+                        'icon' => 'fa-user-friends',
+                        'iconModifier' => 'members',
+                        'valueId' => 'total-members',
+                        'label' => 'Total Members',
+                    ]),
+                ]) ?>
+
+                <?= layout_section_title('Fellowships Overview', 'fa-th-large') ?>
+
+                <?= layout_toolbar([
+                    'search' => [
+                        'id' => 'fellowship-search',
+                        'placeholder' => 'Search fellowships by name, leader or location...',
+                    ],
+                    'buttons' => [layout_button([
+                        'id' => 'export-fellowships',
+                        'label' => 'Export List',
+                        'icon' => 'fa-download',
+                        'classes' => 'btn btn-outline',
+                    ])],
+                ]) ?>
+
+                <!-- Grid View: cards populated by fellowships.js -->
+                <div class="fellowships-grid" id="fellowships-grid"></div>
+
+                <!-- Table View -->
+                <?= layout_section_title('Detailed Records', 'fa-table') ?>
+
+                <?= layout_data_table([
+                    'tbodyId' => 'fellowships-table-body',
+                    'columns' => [
+                        ['label' => 'Fellowship'],
+                        ['label' => 'Leader'],
+                        ['label' => 'Members'],
+                        ['label' => 'Schedule'],
+                        ['label' => 'Location'],
+                        ['label' => 'Status'],
+                        ['label' => 'Actions'],
+                    ],
+                ]) ?>
+
+<?php require_once LAYOUT_DIR . '/body-close.php'; ?>

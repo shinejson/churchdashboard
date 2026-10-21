@@ -1,171 +1,147 @@
 <?php
-require_once '../../backend/config/security.php';
-secure_session_start();
+/**
+ * Departments
+ *
+ * Lists the church's departments with create/edit/delete handled by
+ * js/departments.js against backend/ajax/departments_crud.php.
+ *
+ * Rendered through the shared layout (frontend/layout/*): the document shell,
+ * theme bootstrap, CSRF meta tag, API configuration and asset URLs all come
+ * from there instead of being re-declared per page. Every DOM hook the
+ * department script binds to is unchanged.
+ */
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
-    exit();
-}
+require_once __DIR__ . '/../layout/bootstrap.php';
+
+$deptModal = layout_modal([
+    'id' => 'dept-modal',
+    'title' => 'Create New Department',
+    'titleIcon' => 'fa-building',
+    'closeTag' => 'button',
+    'bodyId' => null,
+    'body' => layout_form([
+        'id' => 'dept-form',
+        'class' => 'modal-form',
+        'body' => [
+            '<input type="hidden" id="dept-id">',
+            layout_form_group([
+                'id' => 'dept-name',
+                // The required marker is markup, not an option label.
+                'labelHtml' => 'Department Name <span class="required">*</span>',
+                'control' => layout_input([
+                    'type' => 'text',
+                    'id' => 'dept-name',
+                    'class' => null,
+                    'required' => true,
+                    'placeholder' => 'e.g. Choir, Ushering, Media Team',
+                    'autocomplete' => 'off',
+                ]),
+            ]),
+            layout_form_group([
+                'id' => 'dept-description',
+                'label' => 'Description',
+                'control' => layout_textarea([
+                    'id' => 'dept-description',
+                    'rows' => 4,
+                    'placeholder' => 'Describe the purpose and responsibilities of this department...',
+                ]),
+                'hint' => 'Optional: Provide details about what this department does',
+            ]),
+            layout_form_actions([
+                ['label' => 'Cancel', 'icon' => 'fa-times', 'variant' => 'outline', 'classes' => 'btn btn-outline close-modal'],
+                ['label' => 'Save Department', 'icon' => 'fa-save', 'type' => 'submit', 'classes' => 'btn btn-primary'],
+            ]),
+        ],
+    ]),
+]);
+
+$page = layout_page_init([
+    'id' => 'departments',
+    'title' => 'Departments',
+    // Sidebar gates this entry on the fellowships module; keep the same rule so
+    // a direct URL cannot bypass what the menu already hides.
+    'permission' => 'fellowships',
+    'css' => ['css/style.css', 'css/fellowships.css', 'css/icons.css'],
+    'scripts' => ['js/ui.js', 'js/main.js', 'js/departments.js'],
+    'overlays' => $deptModal,
+]);
+
+require_once LAYOUT_DIR . '/head.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="<?php echo get_csrf_token(); ?>">
-    <title>Departments • Church Management System</title>
-    
-    <!-- API Configuration - MUST load first -->
-    <?php require_once __DIR__ . '/../includes/config.php'; outputApiConfig(); ?>
-    
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/fellowships.css">
-    <link rel="stylesheet" href="../css/icons.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-    
-    <!-- Environment and Configuration -->
-    <script src="../js/env.js"></script>
-    <script src="../js/config.js"></script>
-</head>
-<body>
-    <script>
-        const saved = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = saved === 'dark' || (!saved && prefersDark);
-        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    </script>
-    <?php include '../topnav.php'; ?>
-    
-    <div id="app">
-        <?php include '../sidebar.php'; ?>
-        
-        <main class="content">
-            <div class="page-content active">
+
+<?php require_once LAYOUT_DIR . '/body-open.php'; ?>
+
                 <!-- Page Header -->
-                <div class="page-header">
-                    <h2><i class="fas fa-building"></i> Departments Management</h2>
-                    <button id="create-dept-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Create Department
-                    </button>
-                </div>
+                <?= layout_page_header([
+                    'title' => 'Departments Management',
+                    'icon' => 'fa-building',
+                    'actions' => [layout_button([
+                        'id' => 'create-dept-btn',
+                        'label' => 'Create Department',
+                        'icon' => 'fa-plus',
+                        'classes' => 'btn btn-primary',
+                    ])],
+                ]) ?>
 
                 <!-- Stats Overview -->
-                <div class="stats-overview">
-                    <div class="stat-card">
-                        <div class="stat-icon total">
-                            <i class="fas fa-building"></i>
-                        </div>
-                        <span class="stat-value" id="total-depts">0</span>
-                        <span class="stat-label">Total Departments</span>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon active">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <span class="stat-value" id="active-depts">0</span>
-                        <span class="stat-label">Active Departments</span>
-                    </div>
-                </div>
+                <?= layout_stats_overview([
+                    layout_stat_card([
+                        'icon' => 'fa-building',
+                        'iconModifier' => 'total',
+                        'valueTag' => 'span',
+                        'valueId' => 'total-depts',
+                        'label' => 'Total Departments',
+                    ]),
+                    layout_stat_card([
+                        'icon' => 'fa-check-circle',
+                        'iconModifier' => 'active',
+                        'valueTag' => 'span',
+                        'valueId' => 'active-depts',
+                        'label' => 'Active Departments',
+                    ]),
+                ]) ?>
 
                 <!-- Search and Filter Bar -->
-                <div class="search-export-bar">
-                    <div class="search-box">
-                        <input type="text" id="search-input" placeholder="Search departments by name or description...">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <button class="btn btn-outline" id="export-btn">
-                        <i class="fas fa-download"></i> Export
-                    </button>
-                </div>
+                <?= layout_toolbar([
+                    'search' => [
+                        'id' => 'search-input',
+                        'placeholder' => 'Search departments by name or description...',
+                    ],
+                    'buttons' => [layout_button([
+                        'id' => 'export-btn',
+                        'label' => 'Export',
+                        'icon' => 'fa-download',
+                        'classes' => 'btn btn-outline',
+                    ])],
+                ]) ?>
 
                 <!-- Table Container -->
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 30%;">
-                                    <span style="cursor: pointer;" data-sort="name">
-                                        Name <i class="fas fa-sort"></i>
-                                    </span>
-                                </th>
-                                <th style="width: 50%;">Description</th>
-                                <th style="width: 20%; text-align: center;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dept-table-body">
-                            <tr>
-                                <td colspan="3" style="text-align: center; padding: 2rem;">
-                                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-color);"></i>
-                                    <p style="margin-top: 1rem; color: var(--text-muted);">Loading departments...</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <?= layout_data_table([
+                    'tbodyId' => 'dept-table-body',
+                    'tbodyContent' => layout_table_loading(3, 'Loading departments...'),
+                    'columns' => [
+                        ['label' => 'Name', 'sort' => 'name', 'style' => 'width: 30%;', 'headerStyle' => 'inline-span'],
+                        ['label' => 'Description', 'style' => 'width: 50%;'],
+                        ['label' => 'Actions', 'style' => 'width: 20%; text-align: center;'],
+                    ],
+                ]) ?>
 
                 <!-- Empty State -->
-                <div id="empty-state" style="display: none; text-align: center; padding: 3rem;">
-                    <i class="fas fa-building" style="font-size: 4rem; color: var(--text-muted); opacity: 0.3;"></i>
-                    <h3 style="margin-top: 1rem; color: var(--text-color);">No Departments Found</h3>
-                    <p style="color: var(--text-muted); margin-top: 0.5rem;">Get started by creating your first department.</p>
-                    <button class="btn btn-primary" style="margin-top: 1.5rem;" onclick="document.getElementById('create-dept-btn').click()">
-                        <i class="fas fa-plus"></i> Create Department
-                    </button>
-                </div>
-            </div>
-        </main>
-    </div>
+                <?= layout_empty_state([
+                    'id' => 'empty-state',
+                    'icon' => 'fa-building',
+                    'title' => 'No Departments Found',
+                    'message' => 'Get started by creating your first department.',
+                    // departments.js binds #create-dept-btn by id (not by
+                    // class), so this second entry point has to forward the
+                    // click itself. Kept as-is from the original page: removing
+                    // it would need a delegated listener added to the script.
+                    'action' => [
+                        'label' => 'Create Department',
+                        'icon' => 'fa-plus',
+                        'classes' => 'btn btn-primary',
+                        'attrs' => ['onclick' => "document.getElementById('create-dept-btn').click()"],
+                    ],
+                ]) ?>
 
-    <!-- Department Modal -->
-    <div id="dept-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title"><i class="fas fa-building"></i> Create New Department</h3>
-                <button class="close" type="button">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="dept-form" class="modal-form">
-                    <input type="hidden" id="dept-id">
-                    
-                    <div class="form-group">
-                        <label for="dept-name">
-                            Department Name <span class="required">*</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="dept-name" 
-                            required 
-                            placeholder="e.g. Choir, Ushering, Media Team"
-                            autocomplete="off"
-                        >
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="dept-description">Description</label>
-                        <textarea 
-                            id="dept-description" 
-                            rows="4" 
-                            placeholder="Describe the purpose and responsibilities of this department..."
-                        ></textarea>
-                        <span class="form-hint">Optional: Provide details about what this department does</span>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-outline close-modal">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save Department
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <?php include '../footer.php'; ?>
-    <script src="../js/ui.js"></script>
-    <script src="../js/main.js"></script>
-    <script src="../js/departments.js"></script>
-</body>
-</html>
+<?php require_once LAYOUT_DIR . '/body-close.php'; ?>

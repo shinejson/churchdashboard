@@ -1,46 +1,118 @@
 <?php
-require_once 'backend/config/security.php';
-secure_session_start();
+/**
+ * Dashboard
+ *
+ * The application root: overview stats, three charts and the quick-insight
+ * widgets, all populated client-side by js/dashboard.js.
+ *
+ * This is the only page that lives at the repo root rather than in
+ * frontend/pages/, so its layout paths carry the `frontend/` prefix and
+ * layout_url()/layout_asset() resolve them from the repository root.
+ *
+ * The dashboard has its own design system in css/dashboard.css - semantic
+ * <article>/<section> cards, `.stats-grid.modern`, `.chart-card`, `.widget-card`
+ * - which deliberately does not use the shared .stat-card/.page-header
+ * components. That markup is therefore kept page-local and verbatim; forcing it
+ * through the components would change the DOM the CSS and dashboard.js bind to.
+ *
+ * Changes made while moving this onto the shared layout:
+ *   - the broken APP_CONFIG override was dropped. It derived the app root from
+ *     `window.location.pathname` up to the last slash, which for a page served
+ *     at /church/index.php yields "/" - so baseUrl became origin + "/" and lost
+ *     the /church subdirectory, and loginUrl pointed outside the install. The
+ *     layout publishes APP_CONFIG from the real request path instead, with more
+ *     keys (pageId, role, isAdmin, csrfToken);
+ *   - the page now emits the API configuration block and js/env.js +
+ *     js/config.js like every other screen. This is safe for the dashboard
+ *     specifically because dashboard.js declares its own local
+ *     `const API_BASE = 'backend'` and resolves every fetch relative to the
+ *     document, so it never reads window.API_BASE;
+ *   - a CSRF meta tag is now emitted (the page had none);
+ *   - the hand-rolled theme snippet, which only read localStorage and defaulted
+ *     to light, was replaced by the shared pre-paint theme script. Note this is
+ *     a small visible change for a first-time visitor whose OS prefers dark:
+ *     they now get the dark theme instead of light, matching the other pages;
+ *   - relative `frontend/...` includes and asset URLs now go through
+ *     layout_url()/layout_asset(), which also adds mtime cache-busting.
+ *
+ * Access is unchanged: guests go to the login page and `member`-role users go to
+ * their profile, which is exactly what the layout's default rule does.
+ */
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ' . SITE_URL . '/frontend/pages/login.php');
-    exit();
-}
-$user_role = $_SESSION['role'] ?? 'guest';
-if ($user_role === 'member') {
-    header('Location: ' . SITE_URL . '/frontend/pages/profile.php');
-    exit();
-}
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard — Church Management System</title>
-    <meta name="description" content="Grace Community Church — Management Dashboard">
-    <link rel="stylesheet" href="frontend/css/style.css">
-    <link rel="stylesheet" href="frontend/css/screens.css">
-    <link rel="stylesheet" href="frontend/css/icons.css">
-    <link rel="stylesheet" href="frontend/css/dashboard.css?v=<?= time() ?>">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        (function(){
-            const saved = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', saved);
-        })();
+require_once __DIR__ . '/frontend/layout/bootstrap.php';
+
+/** Placeholder dialog, retained by the original page for future use. */
+$dashboardModal = <<<'HTML'
+    <!-- Modal (kept for future use) -->
+    <div id="modal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal Title</h3>
+                <span class="close" role="button" tabindex="0" aria-label="Close">&times;</span>
+            </div>
+            <div class="modal-body" id="modal-body"><p>Modal content will appear here.</p></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" id="modal-submit">Submit</button>
+            </div>
+        </div>
+    </div>
+HTML;
+
+/**
+ * The header's Refresh button.
+ *
+ * Kept inline because it calls loadDashboardData(), the global dashboard.js
+ * publishes, and falls back to a reload when that is unavailable.
+ */
+$dashboardScript = <<<'JS'
+<script>
+        document.getElementById('dashboard-refresh')?.addEventListener('click', () => {
+            const btn = document.getElementById('dashboard-refresh');
+            const orig = btn.innerHTML;
+            btn.innerHTML = 'Refreshing…';
+            btn.disabled = true;
+            if (typeof loadDashboardData === 'function') {
+                Promise.resolve(loadDashboardData()).finally(()=>{
+                    btn.innerHTML = orig;
+                    btn.disabled = false;
+                });
+            } else location.reload();
+        });
     </script>
-</head>
-<body>
-    <?php include __DIR__ . '/frontend/topnav.php'; ?>
+JS;
 
-    <div id="app">
-        <?php include __DIR__ . '/frontend/sidebar.php'; ?>
+$page = layout_page_init([
+    'id' => 'dashboard',
+    'title' => 'Dashboard',
+    'titleSuffix' => 'Church Management System',
+    'description' => 'Grace Community Church — Management Dashboard',
+    // Guests are sent to login and member-role users to their profile, which is
+    // the layout's default behaviour for 'none'.
+    'permission' => 'none',
+    'contentId' => 'dashboard-content',
+    'contentClass' => 'dashboard-page',
+    'css' => [
+        'frontend/css/style.css',
+        'frontend/css/screens.css',
+        'frontend/css/icons.css',
+        'frontend/css/dashboard.css',
+    ],
+    // Chart.js sits between main.js and dashboard.js, as it did originally.
+    'scripts' => [
+        'frontend/js/ui.js',
+        'frontend/js/main.js',
+        'https://cdn.jsdelivr.net/npm/chart.js',
+        'frontend/js/dashboard.js',
+    ],
+    'footer' => $dashboardScript,
+    'overlays' => $dashboardModal,
+]);
 
-        <main class="content">
-            <div id="dashboard-content" class="page-content active dashboard-page">
+require_once LAYOUT_DIR . '/head.php';
+?>
+
+<?php require_once LAYOUT_DIR . '/body-open.php'; ?>
 
                 <!-- ===================== Header ===================== -->
                 <header class="dashboard-header" aria-label="Dashboard header">
@@ -56,7 +128,7 @@ if ($user_role === 'member') {
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.7 1 6.3 2.7"/><path d="M21 3v6h-6"/></svg>
                                 Refresh
                             </button>
-                            <a class="btn-sm primary" href="frontend/pages/members.php">
+                            <a class="btn-sm primary" href="<?= htmlspecialchars(layout_url('frontend/pages/members.php'), ENT_QUOTES) ?>">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
                                 Add member
                             </a>
@@ -127,7 +199,7 @@ if ($user_role === 'member') {
                         <section class="chart-card" aria-label="Attendance trend">
                             <div class="chart-header">
                                 <h3>Attendance Trend</h3>
-                                <a href="frontend/pages/attendance.php">View details →</a>
+                                <a href="<?= htmlspecialchars(layout_url('frontend/pages/attendance.php'), ENT_QUOTES) ?>">View details →</a>
                             </div>
                             <div class="chart-body">
                                 <div class="chart-wrap">
@@ -143,7 +215,7 @@ if ($user_role === 'member') {
                         <section class="chart-card" aria-label="Financial overview">
                             <div class="chart-header">
                                 <h3>Financial Overview</h3>
-                                <a href="frontend/pages/financial.php">View details →</a>
+                                <a href="<?= htmlspecialchars(layout_url('frontend/pages/financial.php'), ENT_QUOTES) ?>">View details →</a>
                             </div>
                             <div class="chart-body">
                                 <div class="chart-wrap">
@@ -159,7 +231,7 @@ if ($user_role === 'member') {
                         <section class="chart-card" aria-label="Member distribution">
                             <div class="chart-header">
                                 <h3>Member Distribution</h3>
-                                <a href="frontend/pages/members.php">View details →</a>
+                                <a href="<?= htmlspecialchars(layout_url('frontend/pages/members.php'), ENT_QUOTES) ?>">View details →</a>
                             </div>
                             <div class="chart-body">
                                 <div class="chart-wrap short">
@@ -229,57 +301,11 @@ if ($user_role === 'member') {
                                     <div style="font-weight:800; font-size:13px; line-height:1.2;">Need to record attendance?</div>
                                     <div style="font-size:12px; opacity:.9; margin-top:2px;">Go to Attendance to capture today's service.</div>
                                 </div>
-                                <a href="frontend/pages/attendance.php" style="background:#fff; color:#3a3a3a; padding:8px 12px; border-radius:999px; font-size:12px; font-weight:700; text-decoration:none; white-space:nowrap;">Open →</a>
+                                <a href="<?= htmlspecialchars(layout_url('frontend/pages/attendance.php'), ENT_QUOTES) ?>" style="background:#fff; color:#3a3a3a; padding:8px 12px; border-radius:999px; font-size:12px; font-weight:700; text-decoration:none; white-space:nowrap;">Open →</a>
                             </div>
                         </section>
 
                     </aside>
                 </div>
 
-            </div>
-        </main>
-    </div>
-
-    <?php include __DIR__ . '/frontend/footer.php'; ?>
-
-    <!-- Modal (kept for future use) -->
-    <div id="modal" class="modal" aria-hidden="true">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">Modal Title</h3>
-                <span class="close" role="button" tabindex="0" aria-label="Close">&times;</span>
-            </div>
-            <div class="modal-body" id="modal-body"><p>Modal content will appear here.</p></div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
-                <button type="button" class="btn btn-primary" id="modal-submit">Submit</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="frontend/js/ui.js"></script>
-    <script src="frontend/js/main.js?v=<?= time() ?>"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="frontend/js/dashboard.js?v=<?= time() ?>"></script>
-    <script>
-        const currentPath = window.location.pathname;
-        const appRoot = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-        window.APP_CONFIG = {
-            baseUrl: window.location.origin + appRoot,
-            loginUrl: window.location.origin + appRoot + 'frontend/pages/login.php'
-        };
-        document.getElementById('dashboard-refresh')?.addEventListener('click', () => {
-            const btn = document.getElementById('dashboard-refresh');
-            const orig = btn.innerHTML;
-            btn.innerHTML = 'Refreshing…';
-            btn.disabled = true;
-            if (typeof loadDashboardData === 'function') {
-                Promise.resolve(loadDashboardData()).finally(()=>{
-                    btn.innerHTML = orig;
-                    btn.disabled = false;
-                });
-            } else location.reload();
-        });
-    </script>
-</body>
-</html>
+<?php require_once LAYOUT_DIR . '/body-close.php'; ?>
